@@ -22,6 +22,7 @@ func (p ProcError) Error() string {
 }
 
 // RunProc runs a process to completion, sending output to log
+// 运行进程，直到结束
 func RunProc(cmd string, shellMethod string, dir string, log termlog.Stream) error {
 	log.Header()
 	ex, err := shell.NewExecutor(shellMethod, cmd, dir)
@@ -36,11 +37,12 @@ func RunProc(cmd string, shellMethod string, dir string, log termlog.Stream) err
 		log.Shout("%s", estate.Error)
 		return ProcError{estate.Error.Error(), estate.ErrOutput}
 	}
-	log.Notice(">> done (%s)", time.Since(start))
+	log.Notice(">> done11 (%s)", time.Since(start))
 	return nil
 }
 
 // RunPreps runs all commands in sequence. Stops if any command returns an error.
+// 按顺序运行所有命令。如果任何命令返回错误，则停止
 func RunPreps(
 	b conf.Block,
 	vars map[string]string,
@@ -49,19 +51,23 @@ func RunPreps(
 	notifiers []notify.Notifier,
 	initial bool,
 ) error {
+	//验证shell变量名称是否合规
 	sh, err := shell.GetShellName(vars[shellVarName])
 	if err != nil {
 		return err
 	}
 
+	//获取所有修改（编辑|添加）文件切片，不包括删除
 	var modified []string
 	if mod != nil {
 		modified = mod.All()
 	}
 
+	// 获取block内的一组变量
 	vcmd := varcmd.VarCmd{Block: &b, Modified: modified, Vars: vars}
 	for _, p := range b.Preps {
 		cmd, err := vcmd.Render(p.Command)
+		//如果配置Onchange,则首次运行不做操作，后续操作输出跳过日志
 		if initial && p.Onchange {
 			log.Say(niceHeader("skipping prep: ", cmd))
 			continue

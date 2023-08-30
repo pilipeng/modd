@@ -73,6 +73,7 @@ func (d *daemon) Run() {
 }
 
 // Restart the daemon, or start it if it's not yet running
+// 重启deamon
 func (d *daemon) Restart() {
 	d.Lock()
 	defer d.Unlock()
@@ -114,6 +115,7 @@ func NewDaemonPen(block conf.Block, vars map[string]string, log termlog.TermLog)
 	d := make([]*daemon, len(block.Daemons))
 	for i, dmn := range block.Daemons {
 		vcmd := varcmd.VarCmd{Block: nil, Modified: nil, Vars: vars}
+		//将配置渲染成可执行命令
 		finalcmd, err := vcmd.Render(dmn.Command)
 		if err != nil {
 			return nil, err
@@ -171,6 +173,7 @@ type DaemonWorld struct {
 }
 
 // NewDaemonWorld creates a DaemonWorld
+// 创建一个守护进程环境
 func NewDaemonWorld(cnf *conf.Config, log termlog.TermLog) (*DaemonWorld, error) {
 	daemonPens := make([]*DaemonPen, len(cnf.Blocks))
 	for i, b := range cnf.Blocks {

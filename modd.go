@@ -114,6 +114,7 @@ func (mr *ModRunner) runBlock(b conf.Block, mod *moddwatch.Mod, dpen *DaemonPen)
 			mr.Log.Shout("Error getting current working directory: %s", err)
 			return
 		}
+		//切换到新目录
 		err = os.Chdir(b.InDir)
 		if err != nil {
 			mr.Log.Shout(
@@ -130,6 +131,7 @@ func (mr *ModRunner) runBlock(b conf.Block, mod *moddwatch.Mod, dpen *DaemonPen)
 			}
 		}()
 	}
+	// pre 运行
 	err := RunPreps(
 		b,
 		mr.Config.GetVariables(),
@@ -143,9 +145,12 @@ func (mr *ModRunner) runBlock(b conf.Block, mod *moddwatch.Mod, dpen *DaemonPen)
 		}
 		return
 	}
+
+	// deamon 重启
 	dpen.Restart()
 }
 
+// 运行Block中的脚本任务
 func (mr *ModRunner) trigger(root string, mod *moddwatch.Mod, dworld *DaemonWorld) {
 	for i, b := range mr.Config.Blocks {
 		lmod := mod
@@ -160,12 +165,16 @@ func (mr *ModRunner) trigger(root string, mod *moddwatch.Mod, dworld *DaemonWorl
 				continue
 			}
 		}
+
+		// 一组 pre||modd 运行
 		mr.runBlock(b, lmod, dworld.DaemonPens[i])
 	}
 }
 
 // Gives control of chan to caller
+// 根据通道消息运行对应操作
 func (mr *ModRunner) runOnChan(modchan chan *moddwatch.Mod, readyCallback func()) error {
+	// 所有的守护进程
 	dworld, err := NewDaemonWorld(mr.Config, mr.Log)
 	if err != nil {
 		return err
@@ -180,6 +189,7 @@ func (mr *ModRunner) runOnChan(modchan chan *moddwatch.Mod, readyCallback func()
 		os.Exit(0)
 	}()
 
+	//匹配条件属性
 	ipatts := mr.Config.IncludePatterns()
 	if mr.ConfReload {
 		ipatts = append(ipatts, filepath.Dir(mr.ConfPath))
@@ -191,6 +201,7 @@ func (mr *ModRunner) runOnChan(modchan chan *moddwatch.Mod, readyCallback func()
 	}
 	// FIXME: This takes a long time. We could start it in parallel with the
 	// first process run in a goroutine
+	// 监控指定点下的目录，返回通知
 	watcher, err := moddwatch.Watch(currentDir, ipatts, []string{}, lullTime, modchan)
 
 	if err != nil {
@@ -215,6 +226,7 @@ func (mr *ModRunner) runOnChan(modchan chan *moddwatch.Mod, readyCallback func()
 			}
 		}
 		mr.Log.SayAs("debug", "Delta: \n%s", mod.String())
+		// 监控changed 触发操作（pre|daemon）
 		mr.trigger(currentDir, mod, dworld)
 	}
 	return nil

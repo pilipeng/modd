@@ -50,6 +50,7 @@ func GetShellName(v string) (string, error) {
 	return v, nil
 }
 
+// 在指定目录执行shell启动进程
 func NewExecutor(shell string, command string, dir string) (*Executor, error) {
 	_, err := makeCommand(shell, command, dir)
 	if err != nil {

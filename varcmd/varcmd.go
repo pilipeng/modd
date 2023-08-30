@@ -91,6 +91,7 @@ func (v *VarCmd) get(name string) (string, error) {
 const esc = '\\'
 
 // Render renders the command with a map of variables
+// 将变量转换为对应的命令
 func (v *VarCmd) Render(cmd string) (string, error) {
 	var err error
 	cmd = string(
